@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "955333363013",
+    "project_id": "cpt-talk-60434",
+    "storage_bucket": "cpt-talk-60434.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:955333363013:android:4a466752fa3efd6de0aa2c",
+        "android_client_info": {
+          "package_name": "local.cpt.markovic.cpt_talk"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjqURc_ORaJEHcmDddR20zIsM9dXP2WxU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
