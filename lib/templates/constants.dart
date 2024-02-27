@@ -86,12 +86,12 @@ class Constants {
 
 //endregion
 //region Helpers
-  static String nome = 'nothing';
-  static String cognome = 'nothing';
-  static String numeroTel = '+410000000';
-  static String nascita = 'nothing';
-  static String sezione = 'nothing';
-  static String email = 'nothing';
+  static String nome = 'John';
+  static String cognome = 'Doe';
+  static String numeroTel = '+41750000000';
+  static String nascita = '01/01/1970';
+  static String sezione = 'I1AA';
+  static String email = 'john.doe@samtrevano.ch';
 
   static String ruolo = 'user';
   static bool abilitato = false;

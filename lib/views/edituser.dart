@@ -4,6 +4,7 @@ import 'package:cpt_talk/helpers/database.dart';
 import 'package:cpt_talk/templates/constants.dart';
 import 'package:cpt_talk/templates/widgets.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:phone_form_field/phone_form_field.dart';
@@ -276,27 +277,44 @@ class _EditUserState extends State<EditUser> {
 
   /// WIP
   editUser() async {
-    _formKey.currentState!.save();
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
 
-    infoDialog(
-        context,
-        "DEBUG",
-        "Nome: " +
-            (_nome ?? Constants.nome) +
-            "\nCognome: " +
-            (_cognome ?? Constants.cognome) +
-            "\nNumero di telefono: " +
-            (_numeroTel ?? Constants.numeroTel) +
-            "\nData di nascita: " +
-            (dateController.text == ""
-                ? Constants.nascita
-                : dateController.text) +
-            "\nClasse: " +
-            (_sezione ?? Constants.sezione) +
-            "\nE-mail: " +
-            (_email ?? Constants.email));
+      await loading('Modifica in corso...');
 
-    await endLoading();
+      infoDialog(
+          context,
+          "DEBUG",
+          "Nome: " +
+              (_nome ?? Constants.nome) +
+              "\nCognome: " +
+              (_cognome ?? Constants.cognome) +
+              "\nNumero di telefono: " +
+              (_numeroTel ?? Constants.numeroTel) +
+              "\nData di nascita: " +
+              (dateController.text == ""
+                  ? Constants.nascita
+                  : dateController.text) +
+              "\nClasse: " +
+              (_sezione ?? Constants.sezione) +
+              "\nE-mail: " +
+              (_email ?? Constants.email));
+
+      try {
+        Constants.nome = _nome!;
+        Constants.cognome = _cognome!;
+        Constants.numeroTel = _numeroTel!;
+        Constants.nascita = dateController.text;
+        Constants.sezione = _sezione!;
+        Constants.email = _email!;
+      } on FirebaseAuthException catch (e) {
+        await endLoading();
+        infoDialog(context, 'Errore - Modifica fallita',
+            'C’è stato un errore durante la modifica dell’utente.');
+      }
+
+      await endLoading();
+    }
 
     setState(() {
       _savingState = !_savingState;
@@ -337,7 +355,8 @@ class _EditUserState extends State<EditUser> {
                         labelText: 'Nome',
                       ),
                       keyboardType: TextInputType.name,
-                      controller: TextEditingController(text: Constants.nome),
+                      controller: TextEditingController(
+                          text: (_nome ?? Constants.nome)),
                       onSaved: (String? value) {
                         _nome = value;
                       },
@@ -360,8 +379,8 @@ class _EditUserState extends State<EditUser> {
                         labelText: 'Cognome',
                       ),
                       keyboardType: TextInputType.name,
-                      controller:
-                          TextEditingController(text: Constants.cognome),
+                      controller: TextEditingController(
+                          text: (_cognome ?? Constants.cognome)),
                       onSaved: (String? value) {
                         _cognome = value;
                       },
@@ -395,8 +414,8 @@ class _EditUserState extends State<EditUser> {
                               labelText: 'Numero di telefono',
                             ),
                             defaultCountry: Constants.initialCountryCode,
-                            initialValue:
-                                PhoneNumber.fromRaw(Constants.numeroTel),
+                            initialValue: PhoneNumber.fromRaw(
+                                (_numeroTel ?? Constants.numeroTel)),
                             autovalidateMode: AutovalidateMode.disabled,
                             focusNode: _phoneFocusNode,
                             onChanged: (phone) {
@@ -460,7 +479,7 @@ class _EditUserState extends State<EditUser> {
                     ),
                     DropdownSearch<String>(
                       enabled: !_savingState,
-                      selectedItem: Constants.sezione,
+                      selectedItem: (_sezione ?? Constants.sezione),
                       dropdownSearchDecoration: const InputDecoration(
                         border: UnderlineInputBorder(),
                         filled: true,
@@ -491,7 +510,8 @@ class _EditUserState extends State<EditUser> {
                         labelText: 'E-mail',
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      controller: TextEditingController(text: Constants.email),
+                      controller: TextEditingController(
+                          text: (_email ?? Constants.email)),
                       onSaved: (String? value) {
                         _email = value;
                       },
