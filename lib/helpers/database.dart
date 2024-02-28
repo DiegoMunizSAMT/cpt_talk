@@ -62,9 +62,34 @@ class Database {
     classi.sort();
   }
 
-  /// Permette di stabilire se un numero di telefono è gia esistente.
-  static Future<String?> checkIfTelExists(String tel) async {
-    var docs = await _collectionUtenti.where('tel', isEqualTo: tel).get();
+  /// Permette di modificare un utente già esistente
+  static Future<void> updateUser(
+      String userId, Map<String, dynamic> updates) async {
+    final userRef =
+        _firestore.collection(Constants.collectionUtenti).doc(userId);
+    await userRef.update(updates);
+    return Future.value();
+  }
+
+  /// Se il numero di telefono esiste nel database e non appartiene all’uid fornito, restituirà l’uid del documento corrispondente.
+  /// Se non esiste un documento con quel numero di telefono, restituirà null.
+  static Future<String?> checkIfTelExists(String tel, [String? uid]) async {
+    var query = _collectionUtenti.where('tel', isEqualTo: tel);
+    if (uid != null) {
+      query = query.where(FieldPath.documentId, isNotEqualTo: uid);
+    }
+    var docs = await query.get();
+    return docs.size > 0 ? docs.docs[0].id : null;
+  }
+
+  /// Se l’email esiste nel database e non appartiene all’uid fornito, restituirà l’uid del documento corrispondente.
+  /// Se non esiste un documento con quell’email, restituirà null.
+  static Future<String?> checkIfEmailExists(String email, [String? uid]) async {
+    var query = _collectionUtenti.where('email', isEqualTo: email);
+    if (uid != null) {
+      query = query.where(FieldPath.documentId, isNotEqualTo: uid);
+    }
+    var docs = await query.get();
     return docs.size > 0 ? docs.docs[0].id : null;
   }
 

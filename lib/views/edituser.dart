@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 
+import '../helpers/authenticate.dart';
+
 class EditUser extends StatefulWidget {
   const EditUser({Key? key}) : super(key: key);
 
@@ -39,6 +41,15 @@ class _EditUserState extends State<EditUser> {
     super.initState();
     _phoneFocusNode.addListener(_onPhoneFocusChanged);
     _sectionFocusNode.addListener(_onSectionFocusChanged);
+
+    _nome = (Constants.nome);
+    _cognome = (Constants.cognome);
+    _numeroTel = (Constants.numeroTel);
+    dateController.text = (Constants.nascita.isNotEmpty
+        ? Constants.nascita
+        : dateController.text);
+    _sezione = (Constants.sezione);
+    _email = (Constants.email);
   }
 
   @override
@@ -275,42 +286,102 @@ class _EditUserState extends State<EditUser> {
     }
   }
 
-  /// WIP
+  /// Questo metodo viene utilizzato per modificare i dettagli di un utente esistente.
   editUser() async {
+    _formKey.currentState!.save();
     if (_formKey.currentState!.validate()) {
-      _formKey.currentState!.save();
+      await loading('Verifica in corso...');
 
-      await loading('Modifica in corso...');
+      User? user = Authenticate.firebaseAuth.currentUser;
 
-      infoDialog(
-          context,
-          "DEBUG",
-          "Nome: " +
-              (_nome ?? Constants.nome) +
-              "\nCognome: " +
-              (_cognome ?? Constants.cognome) +
-              "\nNumero di telefono: " +
-              (_numeroTel ?? Constants.numeroTel) +
-              "\nData di nascita: " +
-              (dateController.text == ""
-                  ? Constants.nascita
-                  : dateController.text) +
-              "\nClasse: " +
-              (_sezione ?? Constants.sezione) +
-              "\nE-mail: " +
-              (_email ?? Constants.email));
+      // Controlla se il numero di telefono esiste già
+      String? telExists = await Database.checkIfTelExists(
+          (_numeroTel ?? Constants.numeroTel), user!.uid);
+      if (telExists == null) {
+        // Controlla se l'email esiste già
+        String? emailExists = await Database.checkIfEmailExists(
+            (_email ?? Constants.email), user!.uid);
+        if (emailExists == null) {
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text("Sei sicuro che vuoi modificare l'utente?"),
+                content: Text("Nome: " +
+                    (_nome ?? Constants.nome) +
+                    "\nCognome: " +
+                    (_cognome ?? Constants.cognome) +
+                    "\nNumero di telefono: " +
+                    (_numeroTel ?? Constants.numeroTel) +
+                    "\nData di nascita: " +
+                    (dateController.text.isNotEmpty
+                        ? dateController.text
+                        : Constants.nascita) +
+                    "\nClasse: " +
+                    (_sezione ?? Constants.sezione) +
+                    "\nE-mail: " +
+                    (_email ?? Constants.email)),
+                actions: <Widget>[
+                  ElevatedButton(
+                    child: Text("Annulla"),
+                    onPressed: () {
+                      // Inserisci qui l'azione da eseguire se l'utente rifiuta
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  ElevatedButton(
+                    child: Text("Accetta"),
+                    onPressed: () async {
+                      await loading('Modifica in corso...');
+                      try {
+                        Constants.nome = (_nome ?? Constants.nome);
+                        Constants.cognome = (_cognome ?? Constants.cognome);
+                        Constants.numeroTel =
+                            (_numeroTel ?? Constants.numeroTel);
+                        Constants.nascita = (dateController.text.isNotEmpty
+                            ? dateController.text
+                            : Constants.nascita);
+                        Constants.sezione = (_sezione ?? Constants.sezione);
+                        Constants.email = (_email ?? Constants.email);
 
-      try {
-        Constants.nome = _nome!;
-        Constants.cognome = _cognome!;
-        Constants.numeroTel = _numeroTel!;
-        Constants.nascita = dateController.text;
-        Constants.sezione = _sezione!;
-        Constants.email = _email!;
-      } on FirebaseAuthException catch (e) {
-        await endLoading();
+                        if (user != null) {
+                          Map<String, dynamic> updates = {
+                            'nome': Constants.nome,
+                            'cognome': Constants.cognome,
+                            'tel': Constants.numeroTel,
+                            'nascita': Constants.nascita,
+                            'sezione': Constants.sezione,
+                            'email': Constants.email,
+                          };
+
+                          await Database.updateUser(user.uid, updates);
+                        } else {
+                          infoDialog(context, 'Errore - Modifica fallita',
+                              'C’è stato un errore durante la modifica dell’utente.2');
+                        }
+
+                        await endLoading();
+
+                        //sum
+                      } on FirebaseAuthException catch (e) {
+                        await endLoading();
+                        infoDialog(context, 'Errore - Modifica fallita',
+                            'C’è stato un errore durante la modifica dell’utente.');
+                      }
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+        } else {
+          infoDialog(context, 'Errore - Modifica fallita',
+              'Esiste già un account associato a questa e-mail.');
+        }
+      } else {
         infoDialog(context, 'Errore - Modifica fallita',
-            'C’è stato un errore durante la modifica dell’utente.');
+            'Esiste già un account associato a questo numero di telefono.');
       }
 
       await endLoading();
@@ -355,8 +426,7 @@ class _EditUserState extends State<EditUser> {
                         labelText: 'Nome',
                       ),
                       keyboardType: TextInputType.name,
-                      controller: TextEditingController(
-                          text: (_nome ?? Constants.nome)),
+                      controller: TextEditingController(text: _nome),
                       onSaved: (String? value) {
                         _nome = value;
                       },
@@ -379,8 +449,7 @@ class _EditUserState extends State<EditUser> {
                         labelText: 'Cognome',
                       ),
                       keyboardType: TextInputType.name,
-                      controller: TextEditingController(
-                          text: (_cognome ?? Constants.cognome)),
+                      controller: TextEditingController(text: _cognome),
                       onSaved: (String? value) {
                         _cognome = value;
                       },
@@ -443,7 +512,7 @@ class _EditUserState extends State<EditUser> {
                             enabled: !_savingState,
                             controller: TextEditingController(
                                 text: _nascita == null
-                                    ? Constants.nascita
+                                    ? dateController.text
                                     : DateFormat(Constants.dateFormat)
                                         .format(_nascita!)),
                             readOnly: true,
@@ -479,7 +548,7 @@ class _EditUserState extends State<EditUser> {
                     ),
                     DropdownSearch<String>(
                       enabled: !_savingState,
-                      selectedItem: (_sezione ?? Constants.sezione),
+                      selectedItem: _sezione,
                       dropdownSearchDecoration: const InputDecoration(
                         border: UnderlineInputBorder(),
                         filled: true,
@@ -510,8 +579,7 @@ class _EditUserState extends State<EditUser> {
                         labelText: 'E-mail',
                       ),
                       keyboardType: TextInputType.emailAddress,
-                      controller: TextEditingController(
-                          text: (_email ?? Constants.email)),
+                      controller: TextEditingController(text: _email),
                       onSaved: (String? value) {
                         _email = value;
                       },
