@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:cpt_talk/helpers/database.dart';
 import 'package:cpt_talk/templates/constants.dart';
 import 'package:cpt_talk/templates/widgets.dart';
@@ -10,6 +8,7 @@ import 'package:intl/intl.dart';
 import 'package:phone_form_field/phone_form_field.dart';
 
 import '../helpers/authenticate.dart';
+import 'chatroom.dart';
 
 class EditUser extends StatefulWidget {
   const EditUser({Key? key}) : super(key: key);
@@ -355,20 +354,26 @@ class _EditUserState extends State<EditUser> {
                           };
 
                           await Database.updateUser(user.uid, updates);
+
+                          user.updateEmail(Constants.email);
+                          user.sendEmailVerification();
+
+                          await endLoading();
+                          Navigator.of(context).pop();
+                          infoDialog(context, 'Modifica completata',
+                              'È stata inviata una e-mail all\'indirizzo $_email. \nSi prega di seguirne le istruzioni per verificare la e-mail.');
                         } else {
+                          await endLoading();
+                          Navigator.of(context).pop();
                           infoDialog(context, 'Errore - Modifica fallita',
-                              'C’è stato un errore durante la modifica dell’utente.2');
+                              'C’è stato un errore durante la modifica dell’utente.');
                         }
-
-                        await endLoading();
-
-                        //sum
                       } on FirebaseAuthException catch (e) {
                         await endLoading();
+                        Navigator.of(context).pop();
                         infoDialog(context, 'Errore - Modifica fallita',
                             'C’è stato un errore durante la modifica dell’utente.');
                       }
-                      Navigator.of(context).pop();
                     },
                   ),
                 ],

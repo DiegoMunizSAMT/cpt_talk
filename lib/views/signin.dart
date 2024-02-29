@@ -9,6 +9,7 @@ import 'package:cpt_talk/templates/widgets.dart';
 import 'package:cpt_talk/views/signup.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:local_auth/local_auth.dart';
 
 import 'chatroom.dart';
 
@@ -30,6 +31,8 @@ class _SignInState extends State<SignIn> {
   String? _password;
   bool _internetConnection = false;
 
+  final LocalAuthentication auth = LocalAuthentication();
+
   /// Il metodo permette di autenticare l'utente con la email e la password.
   signIn() async {
     if (!kIsWeb) {
@@ -40,6 +43,9 @@ class _SignInState extends State<SignIn> {
         });
       }
     }
+
+    //bool canAuthenticate = await auth.isDeviceSupported();
+    //print("DEBUG: canAuthenticate: " + canAuthenticate.toString());
 
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
