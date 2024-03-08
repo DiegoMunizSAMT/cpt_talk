@@ -63,18 +63,22 @@ class _SignInState extends State<SignIn> {
       print('Device has PIN/Pattern/Password: $hasPinOrPatternOrPassword');
 
       // Authenticate the user
-      try {
-        final bool didAuthenticate =
-            await auth.authenticate(localizedReason: 'Please authenticate');
-
-        if (didAuthenticate) {
-          //Something
-        }
-      } on PlatformException catch (e) {
-        print('Exception: $e');
-      }
+      canAuthenticate ? authenticate() : null;
     } else {
       print('Device Support for Authentication: false');
+    }
+  }
+
+  Future<void> authenticate() async {
+    try {
+      final bool didAuthenticate =
+          await auth.authenticate(localizedReason: 'Please authenticate');
+
+      if (didAuthenticate) {
+        //Something
+      }
+    } on PlatformException catch (e) {
+      print('Exception: $e');
     }
   }
 
