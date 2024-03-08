@@ -7,6 +7,7 @@ import 'package:cpt_talk/views/signin.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:xml/xml.dart';
 
 import 'helpers/database.dart';
@@ -55,7 +56,7 @@ void main() async {
    * Istanzio la connessione con Firebase con i valori ricavati in precedenza.
    */
   await Firebase.initializeApp(
-      name: 'CPT-Talk',
+      name: kIsWeb ? '[DEFAULT]' : "CPT Talk",
       options: FirebaseOptions(
           apiKey: apiKey,
           appId: appId,

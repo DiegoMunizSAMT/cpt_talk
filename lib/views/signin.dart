@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cpt_talk/helpers/authenticate.dart';
 import 'package:cpt_talk/helpers/simpledata.dart';
@@ -7,6 +9,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:cpt_talk/templates/widgets.dart';
 import 'package:cpt_talk/views/signup.dart';
+import 'package:flutter/services.dart';
 import 'package:internet_connection_checker/internet_connection_checker.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:local_auth/local_auth.dart';
@@ -33,6 +36,48 @@ class _SignInState extends State<SignIn> {
 
   final LocalAuthentication auth = LocalAuthentication();
 
+  @override
+  void initState() {
+    super.initState();
+
+    // Add your code here
+    checkAuthenticationMethods();
+  }
+
+  Future<void> checkAuthenticationMethods() async {
+    // Is not running on the web
+    if (!kIsWeb) {
+      bool canAuthenticate = await auth.isDeviceSupported();
+      bool hasBiometrics = await auth.canCheckBiometrics;
+
+      List<BiometricType> availableBiometrics = [];
+      if (hasBiometrics)
+        availableBiometrics = await auth.getAvailableBiometrics();
+
+      print('Device Support for Authentication: $canAuthenticate');
+      print('Device has Biometric Capabilities: $hasBiometrics');
+      print('Available Biometrics: $availableBiometrics');
+
+      // Check for PIN/Pattern/Password
+      bool hasPinOrPatternOrPassword = (canAuthenticate && !hasBiometrics);
+      print('Device has PIN/Pattern/Password: $hasPinOrPatternOrPassword');
+
+      // Authenticate the user
+      try {
+        final bool didAuthenticate =
+            await auth.authenticate(localizedReason: 'Please authenticate');
+
+        if (didAuthenticate) {
+          //Something
+        }
+      } on PlatformException catch (e) {
+        print('Exception: $e');
+      }
+    } else {
+      print('Device Support for Authentication: false');
+    }
+  }
+
   /// Il metodo permette di autenticare l'utente con la email e la password.
   signIn() async {
     if (!kIsWeb) {
@@ -43,9 +88,6 @@ class _SignInState extends State<SignIn> {
         });
       }
     }
-
-    //bool canAuthenticate = await auth.isDeviceSupported();
-    //print("DEBUG: canAuthenticate: " + canAuthenticate.toString());
 
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
