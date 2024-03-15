@@ -56,7 +56,7 @@ void main() async {
    * Istanzio la connessione con Firebase con i valori ricavati in precedenza.
    */
   await Firebase.initializeApp(
-      name: kIsWeb ? '[DEFAULT]' : "CPT Talk",
+      name: '[DEFAULT]', //kIsWeb ? '[DEFAULT]' : "Cpt Talk",
       options: FirebaseOptions(
           apiKey: apiKey,
           appId: appId,

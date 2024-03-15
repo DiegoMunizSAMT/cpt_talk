@@ -1,8 +1,10 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cpt_talk/helpers/authenticate.dart';
 import 'package:cpt_talk/helpers/simpledata.dart';
+import 'package:cpt_talk/helpers/sharedpreferenceshelper.dart';
 import 'package:cpt_talk/templates/constants.dart';
 import 'package:cpt_talk/views/forgotpassword.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,6 +36,8 @@ class _SignInState extends State<SignIn> {
   String? _password;
   bool _internetConnection = false;
 
+  bool canAuthenticateWithPassOrBio = false;
+
   final LocalAuthentication auth = LocalAuthentication();
 
   @override
@@ -47,35 +51,36 @@ class _SignInState extends State<SignIn> {
   Future<void> checkAuthenticationMethods() async {
     // Is not running on the web
     if (!kIsWeb) {
-      bool canAuthenticate = await auth.isDeviceSupported();
-      bool hasBiometrics = await auth.canCheckBiometrics;
+      // SharedPreferences is not empty
+      if ((await SharedPreferencesHelper.readAll()).isNotEmpty) {
+        canAuthenticateWithPassOrBio = await auth.isDeviceSupported();
+        bool hasBiometrics = await auth.canCheckBiometrics;
 
-      List<BiometricType> availableBiometrics = [];
-      if (hasBiometrics)
-        availableBiometrics = await auth.getAvailableBiometrics();
+        List<BiometricType> availableBiometrics = [];
+        if (hasBiometrics)
+          availableBiometrics = await auth.getAvailableBiometrics();
 
-      print('Device Support for Authentication: $canAuthenticate');
-      print('Device has Biometric Capabilities: $hasBiometrics');
-      print('Available Biometrics: $availableBiometrics');
+        print(
+            'Device Support for Authentication: $canAuthenticateWithPassOrBio');
+        print('Device has Biometric Capabilities: $hasBiometrics');
+        print('Available Biometrics: $availableBiometrics');
 
-      // Check for PIN/Pattern/Password
-      bool hasPinOrPatternOrPassword = (canAuthenticate && !hasBiometrics);
-      print('Device has PIN/Pattern/Password: $hasPinOrPatternOrPassword');
-
-      // Authenticate the user
-      canAuthenticate ? authenticate() : null;
-    } else {
-      print('Device Support for Authentication: false');
+        // Check for PIN/Pattern/Password
+        bool hasPinOrPatternOrPassword =
+            (canAuthenticateWithPassOrBio && !hasBiometrics);
+        print('Device has PIN/Pattern/Password: $hasPinOrPatternOrPassword');
+      }
     }
   }
 
-  Future<void> authenticate() async {
+  Future<void> authenticateWithPassOrBio() async {
     try {
       final bool didAuthenticate =
           await auth.authenticate(localizedReason: 'Please authenticate');
 
       if (didAuthenticate) {
-        //Something
+        String email = await SharedPreferencesHelper.readData("email");
+        String pass = await SharedPreferencesHelper.readData("pass");
       }
     } on PlatformException catch (e) {
       print('Exception: $e');
@@ -145,10 +150,50 @@ class _SignInState extends State<SignIn> {
             return value.get("abilitato");
           });
 
+          showDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return AlertDialog(
+                title: Text("Vuoi salvare l'utente nel sistema?"),
+                content: Text("Email: $_email \nPassword: $_password"),
+                actions: <Widget>[
+                  ElevatedButton(
+                    child: Text("Annulla"),
+                    onPressed: () {
+                      // Inserisci qui l'azione da eseguire se l'utente rifiuta
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  ElevatedButton(
+                    child: Text("Accetta"),
+                    onPressed: () async {
+                      await loading('Salvataggio in corso...');
+                      try {
+                        SharedPreferencesHelper.saveData("email", _email!);
+                        SharedPreferencesHelper.saveData("pass", _password!);
+
+                        await endLoading();
+                        Navigator.of(context).pop();
+                        infoDialog(context, 'Salvataggio completato',
+                            'È stata inviata una e-mail all\'indirizzo $_email. \nSi prega di seguirne le istruzioni per verificare la e-mail.');
+                      } on FirebaseAuthException catch (e) {
+                        await endLoading();
+                        Navigator.of(context).pop();
+                        infoDialog(context, 'Errore - Modifica fallita',
+                            'C’è stato un errore durante la modifica dell’utente.');
+                      }
+                    },
+                  ),
+                ],
+              );
+            },
+          );
+
           Navigator.pushReplacement(context,
               MaterialPageRoute(builder: (context) => const ChatRoom()));
         }
       } on FirebaseAuthException catch (e) {
+        infoDialog(context, ':(', e.toString());
         await endLoading();
         if (e.code == 'user-not-found') {
           setState(() {
@@ -252,6 +297,18 @@ class _SignInState extends State<SignIn> {
                                             const ForgotPassword()));
                               },
                         child: const Text('Password dimenticata?'),
+                      ),
+                    ),
+                    Container(
+                      alignment: Alignment.centerLeft,
+                      margin: const EdgeInsets.only(left: 40),
+                      child: TextButton(
+                        onPressed: !canAuthenticateWithPassOrBio
+                            ? null
+                            : () {
+                                authenticateWithPassOrBio();
+                              },
+                        child: const Text('Accedi con Biometria/Passcode'),
                       ),
                     ),
                     const SizedBox(
