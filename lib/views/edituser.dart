@@ -64,6 +64,7 @@ class _EditUserState extends State<EditUser> {
   /// Metodo listener che viene invocato quando avviene un cambio di focus
   /// al campo di scelta del numero di telefono.
   void _onPhoneFocusChanged() {
+    _formKey.currentState!.save();
     setState(() {});
   }
 
