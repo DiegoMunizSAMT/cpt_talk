@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <firebase>
     <production>
-        <apiKey>AIzaSyAriBg9bvAqqjr1muh4296W7-xh9i6jTGg</apiKey>
+        <!-- <apiKey>AIzaSyDpCN7VXoolhGtxP3fenDFcEcnhfngRiVw</apiKey> -->
+        <apiKey>AIzaSyAriBg9bvAqqjr1muh4296W7-xh9i6jTGg</apiKey> 
         <appId>1:273782728052:android:716e3fd5528ca0a8023821</appId>
         <messagingSenderId>273782728052</messagingSenderId>
         <projectId>cpt-talk-84a98</projectId>
